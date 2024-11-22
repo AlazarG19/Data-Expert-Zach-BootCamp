@@ -85,3 +85,6 @@ select player_name,
 	(season_stats[cardinality(season_stats)])  as latest_season
 from players 
 where current_season = 2001
+
+
+--select * from players where player_name = 'Michael Jordan';
