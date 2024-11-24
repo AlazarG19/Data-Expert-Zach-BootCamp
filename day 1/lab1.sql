@@ -30,18 +30,21 @@
 --)
 
 --drop table players
+-- insert it to player table in a way that season stats are cummulated in a array
 
+
+--select min(season) from player_seasons
+--insert into players 
 -- used to fetch history and present data
 with yesterday as (
 	select * from players 
-	where current_season = 2000
+	where current_season = 1999
 	
 ),today as (
 	select * from zach_bootcamp.public.player_seasons
-	where season = 2001
+	where season = 2000
 )
--- insert it to player table in a way that season stats are cummulated in a array
-insert into players 
+
 select 
 	coalesce(t.player_name,y.player_name) as player_name,
 	coalesce(t.height,y.height) as height,
@@ -79,12 +82,12 @@ on t.player_name = y.player_name;
 -- can be used to avoid joins
 --select player_name,(unnest(season_stats)::season_stats).* from players where current_season = 2001 and player_name = 'Michael Jordan'
 
-select player_name,
-	(season_stats[1]::season_stats).pts as first_season,
-	season_stats  as season_stats,
-	(season_stats[cardinality(season_stats)])  as latest_season
-from players 
-where current_season = 2001
+--select player_name,
+--	(season_stats[1]::season_stats).pts as first_season,
+--	season_stats  as season_stats,
+--	(season_stats[cardinality(season_stats)])  as latest_season
+--from players 
+--where current_season = 2001
+--
+--
 
-
---select * from players where player_name = 'Michael Jordan';
