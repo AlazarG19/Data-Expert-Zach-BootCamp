@@ -1,0 +1,138 @@
+--CREATE TYPE vertex_type as enum('player','team','game');
+--
+--CREATE TABLE vertices (
+--	identifier text,
+--	TYPE vertex_type,
+--	properties json,
+--	primary key(identifier,type)
+--)
+
+--create type edge_type as enum('plays_against','shares_team','plays_in','plays_on')
+
+--create table edges ( 
+--	subject_identifier text,
+--	subject_type vertex_type,
+--	object_identifier text,
+--	object_type vertex_type,
+--	edge_type edge_type,
+--	properties json,
+--	primary key (
+--		subject_identifier,
+--		subject_type,
+--		object_identifier,
+--		object_type,
+--		edge_type
+--	)
+--)
+
+
+
+--insert into vertices
+--select game_id as identifier,
+--	'game'::vertex_type as type,
+--	json_build_object(
+--	'pts_home',pts_home,
+--	'pts_away',pts_away,
+--	'winning_team', case when home_team_wins  = 1 then home_team_id else visitor_team_id end
+--	) as properties 
+--	from games
+--
+--insert into vertices
+--with player_agg as (
+--	select 
+--	player_id as identifier,
+--	max(player_name) as player_name,
+--	count(1) as number_of_games,
+--	sum(pts) as total_points,
+--	array_agg(distinct team_id) as teams
+--	from game_details
+--	group by player_id
+--	)
+--select identifier, 'player'::vertex_type,
+--json_build_object('player_name',player_name,'number_of_games',number_of_games,'total_points',total_points,'teams',teams)
+--from player_agg
+
+--insert into vertices
+--with teams_deduped as (
+--	select *, row_number() over (partition by team_id) as row_number from teams
+--)
+--select 
+--team_id as identifier,
+--'team'::vertex_type as type,
+--json_build_object(
+--'abbreviation',abbreviation ,
+--'nickname', nickname,
+--'city',city,
+--'arena','arena',
+--'year_founded',yearfounded 
+--) 
+--from teams_deduped
+--where row_number = 1;
+
+-- even if the code doesn't contain duplicates it works correctly
+
+--with game_details_deduped as ( 
+--	select *, row_number() over (partition by player_id,game_id) as row_number
+--	from game_details
+--)
+--insert into edges
+--select 
+--	player_id as subject_identifier,
+--	'player'::vertex_type as subject_type,
+--	game_id as object_identifier,
+--	'game'::vertex_type as object_type,
+--	'plays_in'::edge_type as edge_type,
+--	json_build_object(
+--	'start_position',start_position,
+--	'pts',pts,
+--	'team_id',team_id,
+--	'team_abbreviation',team_abbreviation
+--	) as properties
+--from game_details_deduped
+--where row_number = 1
+
+--select v.properties ->>'player_name',max((e.properties->>'pts')::integer)
+--from vertices v join edges e 
+--on e.subject_identifier = v.identifier 
+--and e.subject_type = v.type  
+--group by 1
+--order by 2 desc
+
+--insert into edges
+--with game_details_deduped as ( 
+--	select *, row_number() over (partition by player_id,game_id) as row_number
+--	from game_details
+--),
+--game_details_filtered as ( 
+--	 select * from game_details_deduped where row_number = 1
+--),
+--game_details_aggregated as (
+--select
+--gdf1.player_id as subject_player_id,
+--gdf2.player_id as object_player_id,
+--case when gdf1.team_abbreviation = gdf2.team_abbreviation then 'shares_team'::edge_type 
+--	else 'plays_against'::edge_type end as edge_type,
+--max(gdf1.player_name) as subject_player_name,
+--max(gdf2.player_name) as object_player_name,
+--count(1) as num_games,
+--sum(gdf1.pts) as subject_points,
+--sum(gdf2.pts) as object_points
+--from game_details_filtered gdf1 
+--join game_details_filtered gdf2 
+--on gdf1.game_id = gdf2.game_id 
+--and gdf1.player_name <> gdf2.player_name
+--where gdf1.player_id > gdf2.player_id
+--group by 
+--gdf1.player_id,
+--gdf2.player_id,
+--case when gdf1.team_abbreviation = gdf2.team_abbreviation then 'shares_team'::edge_type 
+--	else 'plays_against'::edge_type end
+--)
+--select 
+--subject_player_id as subject_identifier,
+--'player'::vertex_type as subject_type,
+--object_player_id as object_identifier,
+--'player'::vertex_type as object_type,
+--edge_type as edge_type,
+--json_build_object('subject_points',subject_points,'object_points',object_points) as properties 
+--from game_details_aggregated
